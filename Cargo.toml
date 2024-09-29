@@ -1,0 +1,13 @@
+[package]
+name = "shac-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+naga = { version = "22.0", features = [
+    "glsl-in",
+    "wgsl-in",
+    "spv-out",
+    "wgsl-out",
+    "hlsl-out",
+] }
