@@ -1,4 +1,35 @@
 use core::fmt;
+use std::error::Error;
+
+use crate::Stage;
+
+impl From<Stage> for naga::ShaderStage {
+    fn from(value: Stage) -> Self {
+        match value {
+            Stage::Vertex => naga::ShaderStage::Vertex,
+            Stage::Pixel => naga::ShaderStage::Fragment,
+            Stage::Compute => naga::ShaderStage::Compute,
+        }
+    }
+}
+
+pub fn convert_glsl_to_wgsl(source: &str, stage: Stage) -> Result<String, impl Error> {
+    let stage: naga::ShaderStage = stage.into();
+    let options = naga::front::glsl::Options::from(stage);
+    let module = naga::front::glsl::Frontend::default()
+        .parse(&options, source)
+        .unwrap();
+
+    let info = naga::valid::Validator::new(
+        naga::valid::ValidationFlags::all(),
+        naga::valid::Capabilities::all(),
+    )
+    .validate(&module)
+    .unwrap();
+
+    let flags = naga::back::wgsl::WriterFlags::all();
+    naga::back::wgsl::write_string(&module, &info, flags)
+}
 
 pub struct ShaderConverter;
 
@@ -23,21 +54,7 @@ impl ShaderConverter {
     }
 
     pub fn convert_glsl_to_wgsl(source: &str) -> String {
-        let stage = naga::ShaderStage::Compute;
-        let options = naga::front::glsl::Options::from(stage);
-        let module = naga::front::glsl::Frontend::default()
-            .parse(&options, source)
-            .unwrap();
-
-        let info = naga::valid::Validator::new(
-            naga::valid::ValidationFlags::all(),
-            naga::valid::Capabilities::all(),
-        )
-        .validate(&module)
-        .unwrap();
-
-        let flags = naga::back::wgsl::WriterFlags::all();
-        naga::back::wgsl::write_string(&module, &info, flags).unwrap()
+        convert_glsl_to_wgsl(source, Stage::Compute).unwrap()
     }
 
     pub fn convert_wgsl_to_spirv(source: &str) -> Vec<u8> {
